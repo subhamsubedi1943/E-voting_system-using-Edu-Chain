@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Voting System</title>
+</head>
+<body>
+    <h2>Blockchain Voting System</h2>
+
+    <div>
+        <label for="proposalSelect">Choose a Proposal to Vote:</label>
+        <select id="proposalSelect">
+        </select>
+        <button onclick="vote()">Vote</button>
+    </div>
+
+    <div>
+        <h3>Results</h3>
+        <button onclick="showResults()">Show Results</button>
+        <ul id="resultsList"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script>
+        const contractAddress = 'YOUR_CONTRACT_ADDRESS'; // Replace with your contract address
+        const abi = [/* ABI from the Remix Compiler */]; // Replace with your contract ABI
+
+        const web3 = new Web3(Web3.givenProvider);
+        const contract = new web3.eth.Contract(abi, contractAddress);
+
+        window.addEventListener('load', async () => {
+            await window.ethereum.enable();
+            loadProposals();
+        });
+
+        async function loadProposals() {
+            const proposalSelect = document.getElementById('proposalSelect');
+            const proposalCount = await contract.methods.totalProposals().call();
+
+            for (let i = 0; i < proposalCount; i++) {
+                const proposalName = await contract.methods.getProposalName(i).call();
+                const option = document.createElement('option');
+                option.value = i;
+                option.innerText = proposalName;
+                proposalSelect.appendChild(option);
+            }
+        }
+
+        async function vote() {
+            const proposalIndex = document.getElementById('proposalSelect').value;
+            const accounts = await web3.eth.getAccounts();
+
+            await contract.methods.vote(proposalIndex).send({ from: accounts[0] });
+            alert('Vote cast successfully!');
+        }
+
+        async function showResults() {
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+
+            const proposalCount = await contract.methods.totalProposals().call();
+            for (let i = 0; i < proposalCount; i++) {
+                const proposalName = await contract.methods.getProposalName(i).call();
+                const voteCount = await contract.methods.getVoteCount(i).call();
+
+                const listItem = document.createElement('li');
+                listItem.innerText = `${proposalName}: ${voteCount} votes`;
+                resultsList.appendChild(listItem);
+            }
+        }
+    </script>
+</body>
+</html>
